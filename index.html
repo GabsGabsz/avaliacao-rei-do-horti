@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Avaliação Mensal – Rei do Horti</title>
+  <style>
+    :root{
+      --ink:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --soft:#f9fafb;
+      --radius:14px;
+      --sans: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);background:var(--soft);color:var(--ink);padding:14px}
+    .wrap{max-width:980px;margin:auto}
+    .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+    h1{font-size:18px;margin:0 0 8px 0}
+    h2{font-size:14px;margin:0 0 10px 0}
+    .muted{color:var(--muted);font-size:12px;line-height:1.35}
+    label{font-size:12px;color:var(--muted)}
+    input, textarea{
+      width:100%; padding:10px; border:1px solid var(--line); border-radius:12px;
+      margin-top:4px; background:#fff; color:var(--ink);
+    }
+    textarea{min-height:78px;resize:vertical}
+    .grid{display:grid;gap:12px}
+    @media(min-width:760px){ .grid{grid-template-columns:1fr 1fr} }
+    .row{display:grid;gap:10px}
+    @media(min-width:760px){ .row{grid-template-columns: 160px 1fr} }
+    .score{max-width:160px}
+    .criterion{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+    .crit-title{font-weight:800;font-size:13px;margin:0 0 6px 0}
+    .btns{display:grid;gap:10px}
+    @media(min-width:760px){ .btns{grid-template-columns:1fr 1fr} }
+    button{
+      width:100%; padding:14px; border:none; border-radius:14px; font-weight:800;
+      background:#111827; color:#fff; font-size:14px; cursor:pointer;
+    }
+    button.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .status{display:none;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);font-size:13px}
+    .status.show{display:block}
+    .ok{background:#f0fdf4;border-color:#86efac}
+    .err{background:#fff1f2;border-color:#fca5a5}
+    .tag{
+      display:inline-block; padding:6px 10px; border:1px solid var(--line);
+      border-radius:999px; font-size:12px; color:var(--muted);
+      background:#fff; margin-top:6px;
+    }
+    .readonly{
+      background:#f9fafb !important;
+      color:#374151 !important;
+    }
+    .hide{display:none!important}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>MODELO OFICIAL DE AVALIAÇÃO MENSAL – REI DO HORTI</h1>
+    <div class="muted" id="modeText">Carregando modo…</div>
+    <div class="tag" id="tokenTag" style="display:none;"></div>
+  </div>
+
+  <!-- AVALIADO -->
+  <div class="card">
+    <h2>Colaborador Avaliado</h2>
+    <div class="grid">
+      <div>
+        <label>Nome do colaborador</label>
+        <input id="avaliado_nome" placeholder="Ex.: João Silva">
+      </div>
+      <div>
+        <label>Função</label>
+        <input id="avaliado_funcao" placeholder="Ex.: Repositor / Caixa">
+      </div>
+      <div>
+        <label>Setor</label>
+        <input id="avaliado_setor" placeholder="Ex.: Hortifruti / Caixa">
+      </div>
+      <div>
+        <label>Mês avaliado</label>
+        <input id="mes" type="month">
+      </div>
+    </div>
+  </div>
+
+  <!-- AVALIADOR 1 -->
+  <div class="card" id="boxA1">
+    <h2>Avaliador 1</h2>
+    <div class="grid">
+      <div>
+        <label>Nome do avaliador 1</label>
+        <input id="a1_nome" placeholder="Ex.: Maria (Encarregada)">
+      </div>
+      <div>
+        <label>E-mail do avaliador 1</label>
+        <input id="a1_email" type="email" placeholder="maria@...">
+      </div>
+    </div>
+
+    <div class="criterion">
+      <h2>Avaliação (Avaliador 1)</h2>
+      <div id="criteriaA1"></div>
+      <div class="muted" style="margin-top:10px;">
+        Regra: se você der nota baixa, escreva o motivo com clareza. Isso é gestão, não “achismo”.
+      </div>
+    </div>
+
+    <div class="criterion">
+      <h2>Imparcialidade</h2>
+      <div class="grid">
+        <div>
+          <label>Nome do avaliador 2</label>
+          <input id="a2_nome" placeholder="Ex.: Carlos (Caixa-chefe)">
+        </div>
+        <div>
+          <label>E-mail do avaliador 2</label>
+          <input id="a2_email" type="email" placeholder="carlos@...">
+        </div>
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        Ao enviar, o Avaliador 2 recebe um link com token e completa a parte dele. Mesma página, sem bagunça.
+      </div>
+    </div>
+  </div>
+
+  <!-- AVALIADOR 2 -->
+  <div class="card hide" id="boxA2">
+    <h2>Avaliador 2</h2>
+    <div class="grid">
+      <div>
+        <label>Seu nome (avaliador 2)</label>
+        <input id="a2_nome_self" placeholder="Seu nome">
+      </div>
+      <div>
+        <label>Seu e-mail (avaliador 2)</label>
+        <input id="a2_email_self" type="email" placeholder="seuemail@...">
+      </div>
+    </div>
+
+    <div class="criterion">
+      <h2>Avaliação (Avaliador 2)</h2>
+      <div class="muted">As notas do avaliador 1 ficam visíveis (somente leitura). Você preenche apenas sua parte.</div>
+      <div id="criteriaA2" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- AÇÕES -->
+  <div class="card">
+    <div class="btns">
+      <button class="secondary" type="button" onclick="window.print()">Imprimir / PDF</button>
+
+      <!-- Botão A1 -->
+      <button id="btnSendA2" type="button" onclick="sendToA2()">Enviar para o Avaliador 2</button>
+
+      <!-- Botão A2 -->
+      <button id="btnFinalize" type="button" class="hide" onclick="finalize()">Finalizar e Enviar para Empresa</button>
+    </div>
+
+    <div class="status" id="statusBox"></div>
+  </div>
+
+</div>
+
+<script>
+  // ✅ Seu endpoint
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbyrA8r79XTxIGbFEnvqXqbnVgxm5wQYoKhxsh5t_5aY2rKVF0Iq8kkG9AXewm131Vme/exec";
+
+  const CRITERIA = [
+    { key:"c1", title:"1. Pontualidade e Assiduidade", desc:"Cumprimento de horário • Justificativas • Constância" },
+    { key:"c2", title:"2. Entrega das Tarefas do Setor", desc:"Organização • Checklist • Cuidados • Giro" },
+    { key:"c3", title:"3. Atitude e Comportamento", desc:"Respeito • Cliente • Comunicação • Postura" },
+    { key:"c4", title:"4. Iniciativa e Proatividade", desc:"Antecipar • Resolver • Buscar solução" },
+    { key:"c5", title:"5. Velocidade e Qualidade", desc:"Agilidade • Detalhes • Consistência" },
+    { key:"c6", title:"6. Normas e Padrões", desc:"Uniforme • Higiene • Procedimentos • Equipamentos" },
+  ];
+
+  const el = id => document.getElementById(id);
+
+  function qs(name){
+    const u = new URL(location.href);
+    return u.searchParams.get(name);
+  }
+
+  function showStatus(kind, msg){
+    const box = el("statusBox");
+    box.className = "status show " + (kind === "ok" ? "ok" : "err");
+    box.textContent = msg;
+  }
+
+  function buildCriteria(containerId, prefix, readonlyA1=false){
+    const box = el(containerId);
+    box.innerHTML = "";
+
+    CRITERIA.forEach(c=>{
+      const wrap = document.createElement("div");
+      wrap.className = "criterion";
+      wrap.innerHTML = `
+        <div class="crit-title">${c.title}</div>
+        <div class="muted">${c.desc}</div>
+
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <label>Nota (0 a 10)</label>
+            <input class="score ${readonlyA1 ? "readonly" : ""}"
+              ${readonlyA1 ? "readonly" : ""}
+              type="number" min="0" max="10" step="0.5"
+              id="${prefix}_${c.key}_nota" placeholder="0–10">
+          </div>
+          <div>
+            <label>Justificativa (motivo da nota)</label>
+            <textarea class="${readonlyA1 ? "readonly" : ""}"
+              ${readonlyA1 ? "readonly" : ""}
+              id="${prefix}_${c.key}_obs" placeholder="Explique o motivo da nota"></textarea>
+          </div>
+        </div>
+      `;
+      box.appendChild(wrap);
+    });
+  }
+
+  function getCriteria(prefix){
+    const out = {};
+    CRITERIA.forEach(c=>{
+      out[c.key] = {
+        nota: el(`${prefix}_${c.key}_nota`).value,
+        obs: el(`${prefix}_${c.key}_obs`).value.trim()
+      };
+    });
+    return out;
+  }
+
+  function setCriteria(prefix, data, readonly=false){
+    CRITERIA.forEach(c=>{
+      if (!data || !data[c.key]) return;
+      el(`${prefix}_${c.key}_nota`).value = data[c.key].nota ?? "";
+      el(`${prefix}_${c.key}_obs`).value  = data[c.key].obs ?? "";
+      if (readonly){
+        el(`${prefix}_${c.key}_nota`).readOnly = true;
+        el(`${prefix}_${c.key}_obs`).readOnly  = true;
+        el(`${prefix}_${c.key}_nota`).classList.add("readonly");
+        el(`${prefix}_${c.key}_obs`).classList.add("readonly");
+      }
+    });
+  }
+
+  function requiredFilledA1(){
+    const must = [
+      ["avaliado_nome","Nome do colaborador"],
+      ["avaliado_funcao","Função"],
+      ["avaliado_setor","Setor"],
+      ["mes","Mês avaliado"],
+      ["a1_nome","Nome do avaliador 1"],
+      ["a1_email","E-mail do avaliador 1"],
+      ["a2_nome","Nome do avaliador 2"],
+      ["a2_email","E-mail do avaliador 2"],
+    ];
+    for (const [id, label] of must){
+      if (!el(id).value.trim()){
+        showStatus("err", `Preencha: ${label}.`);
+        el(id).focus();
+        return false;
+      }
+    }
+    // notas obrigatórias
+    for (const c of CRITERIA){
+      const v = el(`a1_${c.key}_nota`).value;
+      if (v === "" || v === null){
+        showStatus("err", `Preencha a nota do Avaliador 1 em: ${c.title}.`);
+        el(`a1_${c.key}_nota`).focus();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function requiredFilledA2(){
+    const must = [
+      ["a2_nome_self","Seu nome (avaliador 2)"],
+      ["a2_email_self","Seu e-mail (avaliador 2)"],
+    ];
+    for (const [id,label] of must){
+      if (!el(id).value.trim()){
+        showStatus("err", `Preencha: ${label}.`);
+        el(id).focus();
+        return false;
+      }
+    }
+    for (const c of CRITERIA){
+      const v = el(`a2_${c.key}_nota`).value;
+      if (v === "" || v === null){
+        showStatus("err", `Preencha a nota do Avaliador 2 em: ${c.title}.`);
+        el(`a2_${c.key}_nota`).focus();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  async function postJSON(payload){
+    const r = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify(payload)
+    });
+    const txt = await r.text();
+    let json;
+    try{ json = JSON.parse(txt); } catch(e){ json = { raw: txt }; }
+    if (!r.ok) throw new Error(json.error || txt || ("HTTP " + r.status));
+    return json;
+  }
+
+  async function getDraft(token){
+    const url = `${ENDPOINT}?action=get&token=${encodeURIComponent(token)}`;
+    const r = await fetch(url, { method:"GET" });
+    const txt = await r.text();
+    let json;
+    try{ json = JSON.parse(txt); } catch(e){ json = { raw: txt }; }
+    if (!r.ok) throw new Error(json.error || txt || ("HTTP " + r.status));
+    return json;
+  }
+
+  async function sendToA2(){
+    if (!requiredFilledA1()) return;
+
+    showStatus("ok", "Enviando para o Avaliador 2…");
+    const payload = {
+      action: "createDraft",
+      avaliado: {
+        nome: el("avaliado_nome").value.trim(),
+        funcao: el("avaliado_funcao").value.trim(),
+        setor: el("avaliado_setor").value.trim(),
+        mes: el("mes").value
+      },
+      avaliador1: {
+        nome: el("a1_nome").value.trim(),
+        email: el("a1_email").value.trim()
+      },
+      avaliador2: {
+        nome: el("a2_nome").value.trim(),
+        email: el("a2_email").value.trim()
+      },
+      notasA1: getCriteria("a1")
+    };
+
+    try{
+      const res = await postJSON(payload);
+      const token = res.token;
+      el("tokenTag").style.display = "inline-block";
+      el("tokenTag").textContent = "Token: " + token;
+
+      showStatus("ok", "Enviado ✅ O Avaliador 2 receberá um e-mail com o link para completar.");
+    }catch(err){
+      showStatus("err", "Falha ao enviar para o Avaliador 2. Detalhe: " + (err.message || err));
+    }
+  }
+
+  async function finalize(){
+    const token = qs("token");
+    if (!token){
+      showStatus("err", "Token não encontrado. Abra pelo link que chegou no e-mail do Avaliador 2.");
+      return;
+    }
+    if (!requiredFilledA2()) return;
+
+    showStatus("ok", "Finalizando e enviando para a empresa…");
+
+    const payload = {
+      action: "finalize",
+      token,
+      avaliador2_self: {
+        nome: el("a2_nome_self").value.trim(),
+        email: el("a2_email_self").value.trim()
+      },
+      notasA2: getCriteria("a2")
+    };
+
+    try{
+      await postJSON(payload);
+      showStatus("ok", "Finalizado ✅ Enviado para Email-atacadaodasverdurasln@gmail.com");
+      el("btnFinalize").disabled = true;
+    }catch(err){
+      showStatus("err", "Falha ao finalizar. Detalhe: " + (err.message || err));
+    }
+  }
+
+  async function init(){
+    // render campos
+    buildCriteria("criteriaA1", "a1", false);
+    buildCriteria("criteriaA2", "a2", false);
+
+    const token = qs("token");
+    if (!token){
+      // MODO AVALIADOR 1
+      el("modeText").textContent = "Modo: Avaliador 1 (preencha e envie para o Avaliador 2).";
+      el("boxA2").classList.add("hide");
+      el("btnFinalize").classList.add("hide");
+      el("btnSendA2").classList.remove("hide");
+      return;
+    }
+
+    // MODO AVALIADOR 2
+    el("modeText").textContent = "Modo: Avaliador 2 (complete a avaliação e finalize).";
+    el("tokenTag").style.display = "inline-block";
+    el("tokenTag").textContent = "Token: " + token;
+
+    el("boxA2").classList.remove("hide");
+    el("btnFinalize").classList.remove("hide");
+    el("btnSendA2").classList.add("hide");
+
+    // carrega rascunho
+    try{
+      const data = await getDraft(token);
+
+      // preenche e trava dados do avaliado e avaliador 1
+      el("avaliado_nome").value = data.avaliado?.nome || "";
+      el("avaliado_funcao").value = data.avaliado?.funcao || "";
+      el("avaliado_setor").value = data.avaliado?.setor || "";
+      el("mes").value = data.avaliado?.mes || "";
+
+      // trava campos de identificação (A2 não deve editar)
+      ["avaliado_nome","avaliado_funcao","avaliado_setor","mes"].forEach(id=>{
+        el(id).readOnly = true;
+        el(id).classList.add("readonly");
+      });
+
+      // esconde box A1 e mostra apenas A2
+      el("boxA1").classList.add("hide");
+
+      // mostra A1 em leitura dentro de A2 (para transparência)
+      // Vamos reutilizar criteriaA2 para A2, e vamos criar um bloco de leitura A1 acima
+      const a1Read = document.createElement("div");
+      a1Read.className = "criterion";
+      a1Read.innerHTML = `<h2>Notas do Avaliador 1 (somente leitura)</h2><div id="criteriaA1Read"></div>`;
+      el("boxA2").insertBefore(a1Read, el("boxA2").querySelector(".criterion"));
+
+      // render A1 read-only
+      buildCriteria("criteriaA1Read", "a1r", true);
+      setCriteria("a1r", data.notasA1, true);
+
+      // preenche dados do avaliador 2 “oficial” (quem deveria ser)
+      // (o avaliador 2 ainda precisa digitar seu nome/e-mail para registrar quem concluiu)
+      // mas deixamos uma dica:
+      if (data.avaliador2?.nome && !el("a2_nome_self").value) el("a2_nome_self").value = data.avaliador2.nome;
+      if (data.avaliador2?.email && !el("a2_email_self").value) el("a2_email_self").value = data.avaliador2.email;
+
+    }catch(err){
+      showStatus("err", "Não consegui carregar o rascunho pelo token. Detalhe: " + (err.message || err));
+    }
+  }
+
+  window.sendToA2 = sendToA2;
+  window.finalize = finalize;
+  init();
+</script>
+</body>
+</html>
