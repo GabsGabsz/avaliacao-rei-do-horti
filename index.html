@@ -57,6 +57,7 @@
     .hide{display:none!important}
   </style>
 </head>
+
 <body>
 <div class="wrap">
 
@@ -67,7 +68,7 @@
   </div>
 
   <!-- AVALIADO -->
-  <div class="card">
+  <div class="card" id="boxAvaliado">
     <h2>Colaborador Avaliado</h2>
     <div class="grid">
       <div>
@@ -91,7 +92,7 @@
 
   <!-- AVALIADOR 1 -->
   <div class="card" id="boxA1">
-    <h2>Avaliador 1</h2>
+    <h2>Avaliador 1 (primeiro a responder)</h2>
     <div class="grid">
       <div>
         <label>Nome do avaliador 1</label>
@@ -107,12 +108,12 @@
       <h2>Avaliação (Avaliador 1)</h2>
       <div id="criteriaA1"></div>
       <div class="muted" style="margin-top:10px;">
-        Regra: se você der nota baixa, escreva o motivo com clareza. Isso é gestão, não “achismo”.
+        Dica de gestão: nota sem justificativa vira “opinião”. Justificativa bem escrita vira processo.
       </div>
     </div>
 
     <div class="criterion">
-      <h2>Imparcialidade</h2>
+      <h2>Imparcialidade (Avaliador 2)</h2>
       <div class="grid">
         <div>
           <label>Nome do avaliador 2</label>
@@ -124,14 +125,15 @@
         </div>
       </div>
       <div class="muted" style="margin-top:8px;">
-        Ao enviar, o Avaliador 2 recebe um link com token e completa a parte dele. Mesma página, sem bagunça.
+        Ao enviar, o Avaliador 2 recebe um link exclusivo para completar a avaliação. (Um token por avaliação.)
       </div>
     </div>
   </div>
 
   <!-- AVALIADOR 2 -->
   <div class="card hide" id="boxA2">
-    <h2>Avaliador 2</h2>
+    <h2>Avaliador 2 (completa e finaliza)</h2>
+
     <div class="grid">
       <div>
         <label>Seu nome (avaliador 2)</label>
@@ -144,8 +146,13 @@
     </div>
 
     <div class="criterion">
+      <h2>Notas do Avaliador 1 (somente leitura)</h2>
+      <div id="criteriaA1Read"></div>
+    </div>
+
+    <div class="criterion">
       <h2>Avaliação (Avaliador 2)</h2>
-      <div class="muted">As notas do avaliador 1 ficam visíveis (somente leitura). Você preenche apenas sua parte.</div>
+      <div class="muted">Você preenche apenas sua parte. Depois, finalize para enviar ao e-mail da empresa.</div>
       <div id="criteriaA2" style="margin-top:10px;"></div>
     </div>
   </div>
@@ -168,8 +175,8 @@
 </div>
 
 <script>
-  // ✅ Seu endpoint
-  const ENDPOINT = "https://script.google.com/macros/library/d/1bPEmb5rqrHVKYgtDc_zrfhcRS0IeOxPSQg6RX-xLmpqg-qQxV3yt_CVC/3";
+  // ✅ Novo endpoint informado por você
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbyBNIbesI_wHpBgWLkk6E1HmfaB_H0rBlb6Bamkw9kQG4p11yEfSiL9lApQkalryc2A/exec";
 
   const CRITERIA = [
     { key:"c1", title:"1. Pontualidade e Assiduidade", desc:"Cumprimento de horário • Justificativas • Constância" },
@@ -193,7 +200,7 @@
     box.textContent = msg;
   }
 
-  function buildCriteria(containerId, prefix, readonlyA1=false){
+  function buildCriteria(containerId, prefix, readonly=false){
     const box = el(containerId);
     box.innerHTML = "";
 
@@ -207,15 +214,15 @@
         <div class="row" style="margin-top:10px;">
           <div>
             <label>Nota (0 a 10)</label>
-            <input class="score ${readonlyA1 ? "readonly" : ""}"
-              ${readonlyA1 ? "readonly" : ""}
+            <input class="score ${readonly ? "readonly" : ""}"
+              ${readonly ? "readonly" : ""}
               type="number" min="0" max="10" step="0.5"
               id="${prefix}_${c.key}_nota" placeholder="0–10">
           </div>
           <div>
             <label>Justificativa (motivo da nota)</label>
-            <textarea class="${readonlyA1 ? "readonly" : ""}"
-              ${readonlyA1 ? "readonly" : ""}
+            <textarea class="${readonly ? "readonly" : ""}"
+              ${readonly ? "readonly" : ""}
               id="${prefix}_${c.key}_obs" placeholder="Explique o motivo da nota"></textarea>
           </div>
         </div>
@@ -240,6 +247,7 @@
       if (!data || !data[c.key]) return;
       el(`${prefix}_${c.key}_nota`).value = data[c.key].nota ?? "";
       el(`${prefix}_${c.key}_obs`).value  = data[c.key].obs ?? "";
+
       if (readonly){
         el(`${prefix}_${c.key}_nota`).readOnly = true;
         el(`${prefix}_${c.key}_obs`).readOnly  = true;
@@ -267,7 +275,6 @@
         return false;
       }
     }
-    // notas obrigatórias
     for (const c of CRITERIA){
       const v = el(`a1_${c.key}_nota`).value;
       if (v === "" || v === null){
@@ -302,33 +309,51 @@
     return true;
   }
 
-  async function postJSON(payload){
-    const r = await fetch(ENDPOINT, {
+  // ✅ POST sem CORS: envia sem erro, porém sem ler resposta (padrão para Apps Script)
+  async function postNoCors(payload){
+    await fetch(ENDPOINT, {
       method: "POST",
-      headers: {"Content-Type":"text/plain;charset=utf-8"},
+      mode: "no-cors",
       body: JSON.stringify(payload)
     });
-    const txt = await r.text();
-    let json;
-    try{ json = JSON.parse(txt); } catch(e){ json = { raw: txt }; }
-    if (!r.ok) throw new Error(json.error || txt || ("HTTP " + r.status));
-    return json;
+    return { ok: true };
   }
 
-  async function getDraft(token){
-    const url = `${ENDPOINT}?action=get&token=${encodeURIComponent(token)}`;
-    const r = await fetch(url, { method:"GET" });
-    const txt = await r.text();
-    let json;
-    try{ json = JSON.parse(txt); } catch(e){ json = { raw: txt }; }
-    if (!r.ok) throw new Error(json.error || txt || ("HTTP " + r.status));
-    return json;
+  // ✅ JSONP para GET sem CORS
+  function loadDraftJSONP(token){
+    return new Promise((resolve, reject) => {
+      const cbName = "jsonp_cb_" + Math.random().toString(36).slice(2);
+      const script = document.createElement("script");
+
+      window[cbName] = (data) => {
+        cleanup();
+        if (!data || data.ok !== true) {
+          reject(new Error(data?.error || "Falha ao carregar rascunho."));
+        } else {
+          resolve(data);
+        }
+      };
+
+      function cleanup(){
+        try { delete window[cbName]; } catch(e) { window[cbName] = undefined; }
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("Falha de rede ao carregar rascunho (JSONP)."));
+      };
+
+      script.src = `${ENDPOINT}?action=get&token=${encodeURIComponent(token)}&callback=${encodeURIComponent(cbName)}`;
+      document.body.appendChild(script);
+    });
   }
 
   async function sendToA2(){
     if (!requiredFilledA1()) return;
 
-    showStatus("ok", "Enviando para o Avaliador 2…");
+    showStatus("ok", "Enviando para o Avaliador 2… (confirmação chega por e-mail)");
+
     const payload = {
       action: "createDraft",
       avaliado: {
@@ -349,14 +374,10 @@
     };
 
     try{
-      const res = await postJSON(payload);
-      const token = res.token;
-      el("tokenTag").style.display = "inline-block";
-      el("tokenTag").textContent = "Token: " + token;
-
+      await postNoCors(payload);
       showStatus("ok", "Enviado ✅ O Avaliador 2 receberá um e-mail com o link para completar.");
     }catch(err){
-      showStatus("err", "Falha ao enviar para o Avaliador 2. Detalhe: " + (err.message || err));
+      showStatus("err", "Falha ao enviar. Verifique permissões do Web App (Anyone) e conexão. Detalhe: " + (err?.message || err));
     }
   }
 
@@ -368,7 +389,7 @@
     }
     if (!requiredFilledA2()) return;
 
-    showStatus("ok", "Finalizando e enviando para a empresa…");
+    showStatus("ok", "Finalizando… (o relatório chega por e-mail na empresa)");
 
     const payload = {
       action: "finalize",
@@ -381,81 +402,77 @@
     };
 
     try{
-      await postJSON(payload);
-      showStatus("ok", "Finalizado ✅ Enviado para Email-atacadaodasverdurasln@gmail.com");
+      await postNoCors(payload);
+      showStatus("ok", "Finalizado ✅ Relatório enviado para Email-atacadaodasverdurasln@gmail.com");
       el("btnFinalize").disabled = true;
     }catch(err){
-      showStatus("err", "Falha ao finalizar. Detalhe: " + (err.message || err));
+      showStatus("err", "Falha ao finalizar. Verifique permissões do Web App (Anyone). Detalhe: " + (err?.message || err));
     }
   }
 
   async function init(){
-    // render campos
+    // render
     buildCriteria("criteriaA1", "a1", false);
+    buildCriteria("criteriaA1Read", "a1r", true);
     buildCriteria("criteriaA2", "a2", false);
 
     const token = qs("token");
+
     if (!token){
-      // MODO AVALIADOR 1
+      // MODO A1
       el("modeText").textContent = "Modo: Avaliador 1 (preencha e envie para o Avaliador 2).";
+      el("tokenTag").style.display = "none";
+
       el("boxA2").classList.add("hide");
       el("btnFinalize").classList.add("hide");
       el("btnSendA2").classList.remove("hide");
       return;
     }
 
-    // MODO AVALIADOR 2
-    el("modeText").textContent = "Modo: Avaliador 2 (complete a avaliação e finalize).";
+    // MODO A2
+    el("modeText").textContent = "Modo: Avaliador 2 (complete sua parte e finalize).";
     el("tokenTag").style.display = "inline-block";
     el("tokenTag").textContent = "Token: " + token;
 
-    el("boxA2").classList.remove("hide");
-    el("btnFinalize").classList.remove("hide");
     el("btnSendA2").classList.add("hide");
+    el("btnFinalize").classList.remove("hide");
 
-    // carrega rascunho
+    // hide A1 box and show A2 box
+    el("boxA1").classList.add("hide");
+    el("boxA2").classList.remove("hide");
+
+    // carrega draft via JSONP
     try{
-      const data = await getDraft(token);
+      showStatus("ok", "Carregando rascunho da avaliação…");
+      const data = await loadDraftJSONP(token);
 
-      // preenche e trava dados do avaliado e avaliador 1
+      // preencher dados do avaliado (read-only)
       el("avaliado_nome").value = data.avaliado?.nome || "";
       el("avaliado_funcao").value = data.avaliado?.funcao || "";
       el("avaliado_setor").value = data.avaliado?.setor || "";
       el("mes").value = data.avaliado?.mes || "";
 
-      // trava campos de identificação (A2 não deve editar)
       ["avaliado_nome","avaliado_funcao","avaliado_setor","mes"].forEach(id=>{
         el(id).readOnly = true;
         el(id).classList.add("readonly");
       });
 
-      // esconde box A1 e mostra apenas A2
-      el("boxA1").classList.add("hide");
-
-      // mostra A1 em leitura dentro de A2 (para transparência)
-      // Vamos reutilizar criteriaA2 para A2, e vamos criar um bloco de leitura A1 acima
-      const a1Read = document.createElement("div");
-      a1Read.className = "criterion";
-      a1Read.innerHTML = `<h2>Notas do Avaliador 1 (somente leitura)</h2><div id="criteriaA1Read"></div>`;
-      el("boxA2").insertBefore(a1Read, el("boxA2").querySelector(".criterion"));
-
-      // render A1 read-only
-      buildCriteria("criteriaA1Read", "a1r", true);
+      // preenche notas do A1 em modo leitura
       setCriteria("a1r", data.notasA1, true);
 
-      // preenche dados do avaliador 2 “oficial” (quem deveria ser)
-      // (o avaliador 2 ainda precisa digitar seu nome/e-mail para registrar quem concluiu)
-      // mas deixamos uma dica:
+      // sugestão automática para A2 (se vier do rascunho)
       if (data.avaliador2?.nome && !el("a2_nome_self").value) el("a2_nome_self").value = data.avaliador2.nome;
       if (data.avaliador2?.email && !el("a2_email_self").value) el("a2_email_self").value = data.avaliador2.email;
 
+      showStatus("ok", "Rascunho carregado ✅ Preencha sua parte e finalize.");
     }catch(err){
-      showStatus("err", "Não consegui carregar o rascunho pelo token. Detalhe: " + (err.message || err));
+      showStatus("err", "Não consegui carregar o rascunho. Confirme se o token está correto e se o Web App está público (Anyone). Detalhe: " + (err?.message || err));
     }
   }
 
   window.sendToA2 = sendToA2;
   window.finalize = finalize;
+
   init();
 </script>
 </body>
